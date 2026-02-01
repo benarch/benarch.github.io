@@ -1,6 +1,7 @@
+---
 name: Check HTTPS and SSL Certificate
 
-on:
+"on":
   # Run weekly on Mondays at 9 AM UTC
   schedule:
     - cron: '0 9 * * 1'
@@ -22,11 +23,11 @@ jobs:
       - name: Check HTTPS availability
         run: |
           echo "Checking HTTPS for bdali.com..."
-          
+
           # Check if the site is accessible via HTTPS
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://bdali.com)
           echo "HTTP Status Code: $HTTP_CODE"
-          
+
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 301 ] || [ "$HTTP_CODE" -eq 302 ]; then
             echo "✓ Site is accessible via HTTPS"
           else
@@ -37,29 +38,29 @@ jobs:
       - name: Check SSL certificate validity
         run: |
           echo "Checking SSL certificate for bdali.com..."
-          
+
           # Get certificate expiration date
           CERT_INFO=$(echo | openssl s_client -servername bdali.com -connect bdali.com:443 2>/dev/null | openssl x509 -noout -dates 2>/dev/null)
-          
+
           if [ -z "$CERT_INFO" ]; then
             echo "✗ Unable to retrieve SSL certificate information"
             exit 1
           fi
-          
+
           echo "Certificate Information:"
           echo "$CERT_INFO"
-          
+
           # Extract expiration date
           EXPIRY_DATE=$(echo "$CERT_INFO" | grep "notAfter" | cut -d= -f2)
           echo "Certificate expires: $EXPIRY_DATE"
-          
+
           # Convert to epoch time for comparison
           EXPIRY_EPOCH=$(date -d "$EXPIRY_DATE" +%s)
           CURRENT_EPOCH=$(date +%s)
           DAYS_UNTIL_EXPIRY=$(( ($EXPIRY_EPOCH - $CURRENT_EPOCH) / 86400 ))
-          
+
           echo "Days until expiration: $DAYS_UNTIL_EXPIRY"
-          
+
           # Alert if certificate expires in less than 30 days
           if [ $DAYS_UNTIL_EXPIRY -lt 30 ]; then
             echo "⚠️  WARNING: Certificate expires in less than 30 days!"
@@ -74,13 +75,13 @@ jobs:
       - name: Check SSL certificate issuer
         run: |
           echo "Checking SSL certificate issuer..."
-          
+
           # Get certificate issuer information
           ISSUER=$(echo | openssl s_client -servername bdali.com -connect bdali.com:443 2>/dev/null | openssl x509 -noout -issuer 2>/dev/null)
-          
+
           echo "Certificate Issuer:"
           echo "$ISSUER"
-          
+
           # Check if it's a Let's Encrypt certificate (expected for GitHub Pages)
           if echo "$ISSUER" | grep -q "Let's Encrypt"; then
             echo "✓ Certificate issued by Let's Encrypt (GitHub Pages)"
@@ -91,12 +92,12 @@ jobs:
       - name: Verify HTTPS redirect
         run: |
           echo "Checking HTTP to HTTPS redirect..."
-          
+
           # Check if HTTP redirects to HTTPS
           REDIRECT_URL=$(curl -s -L -o /dev/null -w "%{url_effective}" http://bdali.com)
-          
+
           echo "Redirect URL: $REDIRECT_URL"
-          
+
           if echo "$REDIRECT_URL" | grep -q "^https://"; then
             echo "✓ HTTP correctly redirects to HTTPS"
           else
@@ -107,15 +108,15 @@ jobs:
       - name: Check DNS configuration
         run: |
           echo "Checking DNS configuration for bdali.com..."
-          
+
           # Check A records
           echo "A Records:"
           dig +short A bdali.com
-          
+
           # Check AAAA records
           echo "AAAA Records:"
           dig +short AAAA bdali.com
-          
+
           # Check CNAME records (if using www subdomain)
           echo "CNAME Records for www:"
           dig +short CNAME www.bdali.com
