@@ -16,6 +16,8 @@ name: Check HTTPS and SSL Certificate
 jobs:
   check-ssl:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
