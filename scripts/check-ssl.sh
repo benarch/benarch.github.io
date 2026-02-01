@@ -3,6 +3,7 @@
 # SSL Certificate Health Check Script for bdali.com
 # This script checks the SSL certificate validity and HTTPS configuration
 # Usage: ./check-ssl.sh
+# Note: Requires GNU date (Linux) or BSD date (macOS)
 
 set -e
 
@@ -59,8 +60,14 @@ NOT_AFTER=$(echo "$CERT_INFO" | grep "notAfter" | cut -d= -f2)
 echo "   Certificate valid from: $NOT_BEFORE"
 echo "   Certificate expires:    $NOT_AFTER"
 
-# Calculate days until expiration
-EXPIRY_EPOCH=$(date -d "$NOT_AFTER" +%s)
+# Calculate days until expiration (platform-independent)
+if date --version >/dev/null 2>&1; then
+    # GNU date (Linux)
+    EXPIRY_EPOCH=$(date -d "$NOT_AFTER" +%s)
+else
+    # BSD date (macOS)
+    EXPIRY_EPOCH=$(date -j -f "%b %d %H:%M:%S %Y %Z" "$NOT_AFTER" +%s 2>/dev/null || date -j -f "%b %e %H:%M:%S %Y %Z" "$NOT_AFTER" +%s)
+fi
 CURRENT_EPOCH=$(date +%s)
 DAYS_UNTIL_EXPIRY=$(( ($EXPIRY_EPOCH - $CURRENT_EPOCH) / 86400 ))
 
@@ -103,7 +110,7 @@ echo ""
 
 # Check DNS configuration
 echo "5. Checking DNS configuration..."
-A_RECORDS=$(dig +short A $DOMAIN)
+A_RECORDS=$(dig +short A $DOMAIN 2>/dev/null || true)
 if [ -n "$A_RECORDS" ]; then
     echo "   A Records:"
     echo "$A_RECORDS" | sed 's/^/      /'
@@ -112,7 +119,7 @@ else
     print_warning "No A records found"
 fi
 
-AAAA_RECORDS=$(dig +short AAAA $DOMAIN)
+AAAA_RECORDS=$(dig +short AAAA $DOMAIN 2>/dev/null || true)
 if [ -n "$AAAA_RECORDS" ]; then
     echo "   AAAA Records:"
     echo "$AAAA_RECORDS" | sed 's/^/      /'

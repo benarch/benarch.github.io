@@ -61,13 +61,13 @@ jobs:
 
           echo "Days until expiration: $DAYS_UNTIL_EXPIRY"
 
-          # Alert if certificate expires in less than 30 days
-          if [ $DAYS_UNTIL_EXPIRY -lt 30 ]; then
-            echo "⚠️  WARNING: Certificate expires in less than 30 days!"
-            echo "::warning::SSL certificate expires in $DAYS_UNTIL_EXPIRY days"
-          elif [ $DAYS_UNTIL_EXPIRY -lt 0 ]; then
+          # Check certificate expiration status
+          if [ $DAYS_UNTIL_EXPIRY -lt 0 ]; then
             echo "✗ Certificate has EXPIRED!"
             exit 1
+          elif [ $DAYS_UNTIL_EXPIRY -lt 30 ]; then
+            echo "⚠️  WARNING: Certificate expires in less than 30 days!"
+            echo "::warning::SSL certificate expires in $DAYS_UNTIL_EXPIRY days"
           else
             echo "✓ Certificate is valid for $DAYS_UNTIL_EXPIRY more days"
           fi
